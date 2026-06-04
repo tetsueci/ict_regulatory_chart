@@ -97,6 +97,8 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
   </div>
   <div class="sep"></div>
   <div class="tool-group">
+    <button class="tbtn active" id="mt-road" onclick="setTile('road')">標準</button>
+    <button class="tbtn" id="mt-sat" onclick="setTile('sat')">衛星</button>
     <button class="tbtn" id="jump-toggle" onclick="toggleJump()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 14 8 14s8-8.6 8-14a8 8 0 0 0-8-8z"/></svg>場所を移動
     </button>
@@ -322,13 +324,22 @@ function wgs84ToJpc(lat, lng, zone) {
 // アプリ本体
 // ================================================================
 let map, mode='sel', items=[], selId=null, nid=1, dragging=false;
-let tileRoad;
+let tileRoad, tileSat;
 
 function init(){
   map = L.map('map',{zoomControl:true,attributionControl:false}).setView([36.5,136.0],5);
   tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  tileSat  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
   map.on('moveend zoomend', render);
   setMode('sel');
+}
+
+// ── タイル切替 ──────────────────────────────
+function setTile(t){
+  document.getElementById('mt-road').classList.toggle('active',t==='road');
+  document.getElementById('mt-sat').classList.toggle('active',t==='sat');
+  if(t==='road'){ map.removeLayer(tileSat); if(!map.hasLayer(tileRoad)) map.addLayer(tileRoad); }
+  else           { map.removeLayer(tileRoad); if(!map.hasLayer(tileSat))  map.addLayer(tileSat); }
 }
 
 // ── ジャンプパネル ──────────────────────────
