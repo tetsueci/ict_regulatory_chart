@@ -218,7 +218,7 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
   <span id="st-mode" class="st-hi">モード: 選択</span>
   <span id="st-cnt">コーン: 0 ／ 矢印板: 0</span>
   <span id="st-sel"></span>
-  <span style="margin-left:auto;font-size:10px;opacity:.35">© OpenStreetMap contributors ／ JGD2011 ／ v2026-06-04 12:49</span>
+  <span style="margin-left:auto;font-size:10px;opacity:.35">© OpenStreetMap contributors ／ JGD2011 ／ v2026-06-04 12:529</span>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -328,8 +328,13 @@ let tileRoad, tileSat;
 
 function init(){
   map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:23}).setView([36.5,136.0],5);
-  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:23}).addTo(map);
-  tileSat  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:23,maxZoom:23});
+  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+  tileRoad.options.maxNativeZoom = 19;
+  tileRoad.options.maxZoom = 23;
+  tileRoad.addTo(map);
+  tileSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+  tileSat.options.maxNativeZoom = 23;
+  tileSat.options.maxZoom = 23;
   map.on('moveend zoomend', render);
   setMode('sel');
 }
