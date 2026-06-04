@@ -81,10 +81,10 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
   <div class="sep"></div>
   <div class="tool-group">
     <span class="group-label">配置</span>
-    <button class="tbtn" id="b-cone" onclick="setMode('cone')">
+    <button class="tbtn" id="b-cone" onclick="setMode(mode==='cone'?'sel':'cone')">
       <svg width="14" height="14" viewBox="0 0 24 26"><polygon points="12,1 22,25 2,25" fill="#E05A00"/><rect x="2" y="16" width="20" height="3" fill="white" opacity=".9"/></svg>カラーコーン
     </button>
-    <button class="tbtn" id="b-arrow" onclick="setMode('arrow')">
+    <button class="tbtn" id="b-arrow" onclick="setMode(mode==='arrow'?'sel':'arrow')">
       <svg width="14" height="14" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="2" fill="#FFD600" stroke="#B8900A" stroke-width="1"/><polygon points="5,9 13,4 13,7 20,7 20,11 13,11 13,14" fill="#111"/></svg>矢印板
     </button>
   </div>
@@ -327,9 +327,9 @@ let map, mode='sel', items=[], selId=null, nid=1, dragging=false;
 let tileRoad, tileSat;
 
 function init(){
-  map = L.map('map',{zoomControl:true,attributionControl:false}).setView([36.5,136.0],5);
-  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  tileSat  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+  map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:23}).setView([36.5,136.0],5);
+  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:22}).addTo(map);
+  tileSat  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:23,maxZoom:23});
   map.on('moveend zoomend', render);
   setMode('sel');
 }
