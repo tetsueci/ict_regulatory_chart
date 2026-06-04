@@ -328,7 +328,7 @@ let tileRoad, tileSat;
 
 function init(){
   map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:23}).setView([36.5,136.0],5);
-  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:22}).addTo(map);
+  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,maxZoom:23}).addTo(map);
   tileSat  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:23,maxZoom:23});
   map.on('moveend zoomend', render);
   setMode('sel');
