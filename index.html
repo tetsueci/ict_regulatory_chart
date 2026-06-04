@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>道路工事 資機材配置ツール</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; background: #1a1e2e; color: #e0e4f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+#toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #12151f; border-bottom: 1px solid #2a2f45; flex-shrink: 0; flex-wrap: wrap; }
+.tool-group { display: flex; align-items: center; gap: 4px; }
+.group-label { font-size: 10px; color: #5a6080; text-transform: uppercase; letter-spacing:.08em; margin-right:2px; white-space:nowrap; }
+.sep { width:1px; height:22px; background:#2a2f45; margin:0 4px; flex-shrink:0; }
+.tbtn { display:flex; align-items:center; gap:5px; padding:6px 10px; border:1px solid #2a2f45; border-radius:6px; font-size:12px; cursor:pointer; background:#1e2235; color:#a0a8c8; transition:all .15s; white-space:nowrap; user-select:none; }
+.tbtn:hover { background:#262c42; border-color:#3a4060; color:#d0d8f0; }
+.tbtn.active { background:#2a3a5e; border-color:#4a7acc; color:#80b4ff; }
+.tbtn.red:hover { background:#2a1a1a; }
+.tbtn.red.active { background:#3a1e20; border-color:#cc4a4a; color:#ff8080; }
+#map-wrap { flex:1; position:relative; overflow:hidden; }
+#map { width:100%; height:100%; }
+#lines { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:450; }
+#overlay { position:absolute; top:0; left:0; width:100%; height:100%; z-index:500; pointer-events:none; }
+#overlay.on  { pointer-events:all; cursor:crosshair; }
+#overlay.del { pointer-events:all; cursor:not-allowed; }
+.mitem { position:absolute; transform:translate(-50%,-50%); cursor:pointer; pointer-events:all; user-select:none; z-index:600; filter:drop-shadow(0 2px 4px rgba(0,0,0,.5)); transition:filter .1s; }
+.mitem:hover { filter:drop-shadow(0 2px 8px rgba(100,180,255,.6)); }
+
+/* 角度インスペクタ */
+#angle-inspector { position:absolute; bottom:14px; left:14px; z-index:900; background:#12151f; border:1px solid #2a2f45; border-radius:10px; padding:12px 16px; width:270px; box-shadow:0 8px 32px rgba(0,0,0,.6); display:none; }
+#angle-inspector h5 { font-size:12px; color:#80a0d8; margin-bottom:10px; font-weight:600; }
+.angle-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.angle-row label { font-size:11px; color:#6878a8; width:36px; flex-shrink:0; }
+#angle-slider { flex:1; accent-color:#4a7acc; cursor:pointer; }
+#angle-num { width:54px; padding:4px 6px; border:1px solid #2a2f45; border-radius:5px; font-size:12px; background:#1a1e2e; color:#c0c8e8; text-align:center; outline:none; }
+#angle-num:focus { border-color:#4a7acc; }
+.angle-presets { display:flex; gap:4px; flex-wrap:wrap; }
+.ap { padding:3px 7px; border:1px solid #2a2f45; border-radius:4px; font-size:11px; cursor:pointer; background:#1e2235; color:#7080a8; }
+.ap:hover { background:#262c42; color:#c0c8e8; }
+
+/* CSV出力モーダル */
+#csv-modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:9999; }
+#csv-modal.show { display:flex; }
+#csv-box { background:#12151f; border:1px solid #2a2f45; border-radius:12px; padding:22px 24px; width:360px; box-shadow:0 12px 48px rgba(0,0,0,.8); }
+#csv-box h3 { font-size:14px; font-weight:600; color:#c0c8e8; margin-bottom:16px; }
+.csv-opt label { font-size:12px; color:#8090b8; display:block; margin-bottom:6px; }
+.csv-opt select { width:100%; padding:7px 8px; border:1px solid #2a2f45; border-radius:5px; font-size:12px; background:#1a1e2e; color:#c0c8e8; margin-bottom:14px; outline:none; }
+.csv-opt select:focus { border-color:#4a7acc; }
+#zone-note { font-size:11px; color:#5a7098; margin-top:-10px; margin-bottom:14px; line-height:1.5; }
+.modal-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+
+/* ジャンプパネル */
+#jump-panel { position:absolute; top:10px; right:10px; z-index:900; background:#12151f; border:1px solid #2a2f45; border-radius:10px; padding:14px 16px; width:280px; box-shadow:0 8px 32px rgba(0,0,0,.6); display:none; }
+#jump-panel h4 { font-size:13px; font-weight:600; margin-bottom:10px; color:#c0c8e8; }
+.hint-box { background:#1a1e2e; border:1px solid #2a2f45; border-radius:6px; padding:9px 11px; font-size:11px; color:#6878a8; line-height:1.7; margin-bottom:10px; }
+.hint-box b { color:#80a0d8; }
+.preset-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:10px; }
+.preset-btn { padding:5px 8px; border:1px solid #2a2f45; border-radius:5px; font-size:11px; cursor:pointer; background:#1e2235; color:#8090b8; text-align:center; }
+.preset-btn:hover { background:#262c42; color:#b0c0e8; }
+.latlng-row { display:flex; gap:6px; margin-bottom:8px; }
+.sinput { flex:1; padding:6px 8px; border:1px solid #2a2f45; border-radius:5px; font-size:12px; background:#1a1e2e; color:#c0c8e8; outline:none; }
+.sinput:focus { border-color:#4a7acc; }
+.sinput::placeholder { color:#3a4060; }
+.jump-actions { display:flex; gap:6px; }
+#jump-err { font-size:11px; margin-top:5px; min-height:14px; }
+#statusbar { padding:5px 14px; font-size:11px; color:#5a6888; border-top:1px solid #2a2f45; background:#12151f; flex-shrink:0; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.st-hi { color:#80a0d8; }
+.leaflet-control-zoom a { background:#1e2235 !important; color:#a0a8c8 !important; border-color:#2a2f45 !important; }
+.leaflet-control-zoom a:hover { background:#262c42 !important; color:#d0d8f0 !important; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="tool-group">
+    <span class="group-label">モード</span>
+    <button class="tbtn active" id="b-sel" onclick="setMode('sel')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 3l14 9-7 2-3 7z"/></svg>選択
+    </button>
+  </div>
+  <div class="sep"></div>
+  <div class="tool-group">
+    <span class="group-label">配置</span>
+    <button class="tbtn" id="b-cone" onclick="setMode('cone')">
+      <svg width="14" height="14" viewBox="0 0 24 26"><polygon points="12,1 22,25 2,25" fill="#E05A00"/><rect x="2" y="16" width="20" height="3" fill="white" opacity=".9"/></svg>カラーコーン
+    </button>
+    <button class="tbtn" id="b-arrow" onclick="setMode('arrow')">
+      <svg width="14" height="14" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="2" fill="#FFD600" stroke="#B8900A" stroke-width="1"/><polygon points="5,9 13,4 13,7 20,7 20,11 13,11 13,14" fill="#111"/></svg>矢印板
+    </button>
+  </div>
+  <div class="sep"></div>
+  <div class="tool-group">
+    <button class="tbtn red" id="b-del" onclick="setMode('del')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>削除
+    </button>
+    <button class="tbtn red" onclick="clearAll()">全消去</button>
+  </div>
+  <div class="sep"></div>
+  <div class="tool-group">
+    <button class="tbtn" id="jump-toggle" onclick="toggleJump()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 14 8 14s8-8.6 8-14a8 8 0 0 0-8-8z"/></svg>場所を移動
+    </button>
+  </div>
+  <div class="sep"></div>
+  <div class="tool-group">
+    <span class="group-label">データ</span>
+    <button class="tbtn" onclick="openCsvModal()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV出力
+    </button>
+    <button class="tbtn" onclick="document.getElementById('csv-in').click()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>CSV読込
+    </button>
+    <input id="csv-in" type="file" accept=".csv" style="display:none" onchange="importCSV(this)"/>
+  </div>
+</div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <svg id="lines" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="overlay" onclick="onOvClick(event)"></div>
+
+  <div id="angle-inspector">
+    <h5>🔄 矢印板 — 角度を調整</h5>
+    <div class="angle-row">
+      <label>角度</label>
+      <input type="range" id="angle-slider" min="0" max="359" value="0" oninput="onSlider(this.value)"/>
+      <input type="number" id="angle-num" min="0" max="359" value="0" oninput="onAngleNum(this.value)"/>
+      <span style="font-size:11px;color:#6878a8">°</span>
+    </div>
+    <div class="angle-presets">
+      <button class="ap" onclick="setAngle(0)">→0°</button>
+      <button class="ap" onclick="setAngle(45)">↘45°</button>
+      <button class="ap" onclick="setAngle(90)">↓90°</button>
+      <button class="ap" onclick="setAngle(135)">↙135°</button>
+      <button class="ap" onclick="setAngle(180)">←180°</button>
+      <button class="ap" onclick="setAngle(225)">↖225°</button>
+      <button class="ap" onclick="setAngle(270)">↑270°</button>
+      <button class="ap" onclick="setAngle(315)">↗315°</button>
+    </div>
+  </div>
+
+  <div id="jump-panel">
+    <h4>📍 場所を指定して移動</h4>
+    <div class="hint-box">
+      <b>Googleマップから取得：</b><br>
+      現場をGoogleマップで開き、右クリック<br>
+      →「35.xxxx, 139.xxxx」をクリックでコピー<br>
+      → このページにCtrl+V で貼り付け
+    </div>
+    <div style="font-size:11px;color:#5a6888;margin-bottom:5px">よく使う場所</div>
+    <div class="preset-grid">
+      <button class="preset-btn" onclick="jumpTo(35.6812,139.7671,'東京駅')">東京駅</button>
+      <button class="preset-btn" onclick="jumpTo(34.6937,135.5023,'大阪駅')">大阪駅</button>
+      <button class="preset-btn" onclick="jumpTo(35.1815,136.9066,'名古屋駅')">名古屋駅</button>
+      <button class="preset-btn" onclick="jumpTo(43.0687,141.3507,'札幌駅')">札幌駅</button>
+      <button class="preset-btn" onclick="jumpTo(33.5904,130.4017,'博多駅')">博多駅</button>
+      <button class="preset-btn" onclick="jumpTo(35.4437,139.6380,'横浜駅')">横浜駅</button>
+    </div>
+    <div style="font-size:11px;color:#5a6888;margin-bottom:5px">緯度・経度を直接入力</div>
+    <div class="latlng-row">
+      <input class="sinput" id="lat-in" placeholder="緯度 例: 35.6812"/>
+      <input class="sinput" id="lng-in" placeholder="経度 例: 139.7671"/>
+    </div>
+    <div class="jump-actions">
+      <button class="tbtn active" style="flex:1;justify-content:center" onclick="jumpFromInput()">この場所へ移動</button>
+      <button class="tbtn" onclick="toggleJump()">閉じる</button>
+    </div>
+    <div id="jump-err"></div>
+  </div>
+</div>
+
+<!-- CSV出力モーダル -->
+<div id="csv-modal">
+  <div id="csv-box">
+    <h3>📄 CSV出力 — 座標系の選択</h3>
+    <div class="csv-opt">
+      <label>出力座標系</label>
+      <select id="csv-crs" onchange="onCrsChange()">
+        <option value="wgs84">WGS84（緯度・経度）</option>
+        <option value="jpc" selected>平面直角座標系（JGD2011）— X/Y (m)</option>
+      </select>
+    </div>
+    <div class="csv-opt" id="zone-row">
+      <label>系番号（作業エリアに合わせて選択）</label>
+      <select id="csv-zone">
+        <option value="1">第1系 — 長崎・鹿児島(一部)</option>
+        <option value="2">第2系 — 福岡・佐賀・熊本・大分・宮崎・鹿児島</option>
+        <option value="3">第3系 — 山口・島根・広島</option>
+        <option value="4">第4系 — 香川・愛媛・高知・徳島</option>
+        <option value="5">第5系 — 兵庫・鳥取・岡山</option>
+        <option value="6">第6系 — 京都・大阪・福井・滋賀・三重・奈良・和歌山</option>
+        <option value="7">第7系 — 石川・富山・岐阜・愛知</option>
+        <option value="8" selected>第8系 — 新潟・長野・山梨・静岡</option>
+        <option value="9">第9系 — 東京・福島・栃木・茨城・埼玉・千葉・群馬・神奈川</option>
+        <option value="10">第10系 — 青森・秋田・山形・岩手・宮城</option>
+        <option value="11">第11系 — 北海道(西部)</option>
+        <option value="12">第12系 — 北海道(中部)</option>
+        <option value="13">第13系 — 北海道(東部)</option>
+        <option value="14">第14系 — 沖縄(西部)</option>
+        <option value="15">第15系 — 沖縄(東部)</option>
+        <option value="16">第16系 — 沖縄(南部)</option>
+        <option value="17">第17系 — 沖縄(北部)</option>
+        <option value="18">第18系 — 小笠原</option>
+        <option value="19">第19系 — 南鳥島</option>
+      </select>
+      <p id="zone-note">X = 南北方向（北が正）、Y = 東西方向（東が正）、単位: m</p>
+    </div>
+    <div class="modal-btns">
+      <button class="tbtn" onclick="closeCsvModal()">キャンセル</button>
+      <button class="tbtn active" onclick="doExportCSV()">ダウンロード</button>
+    </div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span id="st-mode" class="st-hi">モード: 選択</span>
+  <span id="st-cnt">コーン: 0 ／ 矢印板: 0</span>
+  <span id="st-sel"></span>
+  <span style="margin-left:auto;font-size:10px;opacity:.35">© OpenStreetMap contributors ／ 平面直角座標系: JGD2011</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ================================================================
+// 平面直角座標系 変換 (WGS84 → JGD2011 平面直角)
+// 国土地理院公式アルゴリズム準拠
+// ================================================================
+
+// 各系の原点（緯度φ0, 経度λ0）単位:度
+const JPC_ORIGINS = {
+   1: [33.0, 129.5],
+   2: [33.0, 131.0],
+   3: [36.0, 132.16666667],
+   4: [33.0, 133.5],
+   5: [36.0, 134.33333333],
+   6: [36.0, 135.5],
+   7: [36.0, 136.16666667],
+   8: [36.0, 137.16666667],
+   9: [36.0, 139.83333333],
+  10: [40.0, 140.83333333],
+  11: [44.0, 140.25],
+  12: [44.0, 142.25],
+  13: [44.0, 144.25],
+  14: [26.0, 142.0],
+  15: [26.0, 127.5],
+  16: [26.0, 124.0],
+  17: [26.0, 131.0],
+  18: [20.0, 136.0],
+  19: [26.0, 154.0],
+};
+
+function wgs84ToJpc(lat, lng, zone) {
+  if(!JPC_ORIGINS[zone]) zone=9;
+  const [phi0_deg, lam0_deg] = JPC_ORIGINS[zone];
+  const deg2rad = Math.PI / 180;
+  const phi0 = phi0_deg * deg2rad;
+  const lam0 = lam0_deg * deg2rad;
+  const phi  = lat  * deg2rad;
+  const lam  = lng  * deg2rad;
+
+  // GRS80楕円体
+  const a  = 6378137.0;
+  const F  = 298.257222101;
+  const f  = 1 / F;
+  const n  = f / (2 - f);
+
+  const n2=n*n, n3=n*n*n, n4=n*n*n*n, n5=n2*n3;
+
+  function A(j) {
+    const c = [
+      1 + n2/4 + n4/64,
+      -(3/2)*(n - n3/8 - n5*15/128),
+      (15/16)*(n2 - n4/4),
+      -(35/48)*(n3 - 5*n5/16),
+      (315/512)*n4,
+      -(693/1280)*n5,
+    ];
+    return c[j];
+  }
+
+  const m0 = 0.9999;
+  const a_  = m0 * a / (1 + n) * A(0);
+
+  function S(phi) {
+    return m0*a/(1+n)*(A(0)*phi + A(1)*Math.sin(2*phi) + A(2)*Math.sin(4*phi)
+           + A(3)*Math.sin(6*phi) + A(4)*Math.sin(8*phi) + A(5)*Math.sin(10*phi));
+  }
+
+  const S0 = S(phi0);
+  const dphi = phi - phi0;
+  const dlam = lam - lam0;
+
+  const sinPhi  = Math.sin(phi);
+  const cosPhi  = Math.cos(phi);
+  const e2  = 2*f - f*f;
+  const t   = Math.sinh(Math.atanh(sinPhi) - Math.sqrt(e2)*Math.atanh(Math.sqrt(e2)*sinPhi));
+  const tBar= Math.sqrt(1 + t*t);
+  const xi  = Math.atan2(t, Math.cos(dlam));
+  const eta = Math.atanh(Math.sin(dlam) / tBar);
+
+  const alphas = [
+    0,
+    (1/2)*n - (2/3)*n2 + (5/16)*n3 + (41/180)*n4 - (127/288)*n5,
+    (13/48)*n2 - (3/5)*n3 + (557/1440)*n4 + (281/630)*n5,
+    (61/240)*n3 - (103/140)*n4 + (15061/26880)*n5,
+    (49561/161280)*n4 - (179/168)*n5,
+    (34729/80640)*n5,
+  ];
+
+  let xiP = xi, etaP = eta;
+  for (let j=1; j<=5; j++){
+    xiP  += alphas[j] * Math.sin(2*j*xi) * Math.cosh(2*j*eta);
+    etaP += alphas[j] * Math.cos(2*j*xi) * Math.sinh(2*j*eta);
+  }
+
+  const X = a_ * xiP  - S0;  // 北方向 (m)
+  const Y = a_ * etaP;        // 東方向 (m)
+  return { X: X, Y: Y };
+}
+
+// ================================================================
+// アプリ本体
+// ================================================================
+let map, mode='sel', items=[], selId=null, nid=1, dragging=false;
+let tileRoad;
+
+function init(){
+  map = L.map('map',{zoomControl:true,attributionControl:false}).setView([36.5,136.0],5);
+  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  map.on('moveend zoomend', render);
+  setMode('sel');
+}
+
+// ── ジャンプパネル ──────────────────────────
+function toggleJump(){
+  const p=document.getElementById('jump-panel');
+  const open=p.style.display!=='block';
+  p.style.display=open?'block':'none';
+  document.getElementById('jump-toggle').classList.toggle('active',open);
+}
+function jumpTo(lat,lng,name){
+  map.setView([lat,lng],17);
+  setTimeout(render,300);
+  document.getElementById('jump-panel').style.display='none';
+  document.getElementById('jump-toggle').classList.remove('active');
+  document.getElementById('st-sel').textContent='📍 '+name;
+}
+function jumpFromInput(){
+  const rawLat=document.getElementById('lat-in').value.trim();
+  const rawLng=document.getElementById('lng-in').value.trim();
+  const err=document.getElementById('jump-err');
+  const m=(rawLat+','+rawLng).match(/(-?\d+\.?\d*)\s*[,，\s]\s*(-?\d+\.?\d*)/);
+  let lat,lng;
+  if(m){lat=parseFloat(m[1]);lng=parseFloat(m[2]);}
+  else{lat=parseFloat(rawLat);lng=parseFloat(rawLng);}
+  if(isNaN(lat)||isNaN(lng)){err.textContent='数値を入力してください';err.style.color='#ff7070';return;}
+  if(lat<20||lat>46||lng<122||lng>154){err.textContent='日本国内の座標を入力してください';err.style.color='#ff7070';return;}
+  err.textContent='';
+  jumpTo(lat,lng,lat.toFixed(4)+', '+lng.toFixed(4));
+}
+document.addEventListener('paste',e=>{
+  const txt=(e.clipboardData||window.clipboardData).getData('text');
+  const m=txt.match(/(-?\d+\.\d+)\s*[,，]\s*(-?\d+\.\d+)/);
+  if(m){
+    document.getElementById('lat-in').value=m[1];
+    document.getElementById('lng-in').value=m[2];
+    document.getElementById('jump-panel').style.display='block';
+    document.getElementById('jump-toggle').classList.add('active');
+    const err=document.getElementById('jump-err');
+    err.textContent='✅ 座標を読み込みました。「この場所へ移動」を押してください。';
+    err.style.color='#60d080';
+  }
+});
+
+// ── モード ──────────────────────────────────
+function setMode(m){
+  mode=m;
+  ['sel','cone','arrow','del'].forEach(k=>{
+    const b=document.getElementById('b-'+k); if(b) b.classList.toggle('active',k===m);
+  });
+  const ov=document.getElementById('overlay');
+  ov.className='';
+  if(m==='cone'||m==='arrow') ov.classList.add('on');
+  if(m==='del'){ov.classList.add('on');ov.classList.add('del');}
+  const lbl={sel:'選択',cone:'コーン配置',arrow:'矢印板配置',del:'削除'};
+  document.getElementById('st-mode').textContent='モード: '+lbl[m];
+  if(m==='sel'){map.dragging.enable();map.scrollWheelZoom.enable();map.doubleClickZoom.enable();}
+  else         {map.dragging.disable();map.scrollWheelZoom.disable();map.doubleClickZoom.disable();}
+  if(m!=='sel'){selId=null;updateInspector();render();}
+}
+
+// ── 配置 ────────────────────────────────────
+function onOvClick(e){
+  if(dragging) return;
+  const r=document.getElementById('overlay').getBoundingClientRect();
+  const ll=map.containerPointToLatLng([e.clientX-r.left, e.clientY-r.top]);
+  if(mode==='cone'){
+    items.push({id:nid++,type:'cone',lat:ll.lat,lng:ll.lng,rot:0});
+    render(); updateCnt();
+  } else if(mode==='arrow'){
+    const newId=nid++;
+    items.push({id:newId,type:'arrow',lat:ll.lat,lng:ll.lng,rot:0});
+    selId=newId;
+    render(); updateCnt(); updateInspector();
+    setMode('sel');
+  }
+}
+
+// ── 角度インスペクタ ─────────────────────────
+function updateInspector(){
+  const insp=document.getElementById('angle-inspector');
+  const it=selId?items.find(i=>i.id===selId):null;
+  if(it&&it.type==='arrow'){
+    insp.style.display='block';
+    document.getElementById('angle-slider').value=it.rot;
+    document.getElementById('angle-num').value=it.rot;
+  } else {
+    insp.style.display='none';
+  }
+}
+function onSlider(v){ v=norm(parseInt(v)); document.getElementById('angle-num').value=v; applyAngle(v); }
+function onAngleNum(v){ v=norm(parseInt(v)||0); document.getElementById('angle-slider').value=v; applyAngle(v); }
+function setAngle(v){ v=norm(v); document.getElementById('angle-slider').value=v; document.getElementById('angle-num').value=v; applyAngle(v); }
+function norm(v){ return ((v%360)+360)%360; }
+function applyAngle(v){
+  if(!selId) return;
+  const it=items.find(i=>i.id===selId); if(!it) return;
+  it.rot=v;
+  const el=document.getElementById('overlay').querySelector(`[data-id="${selId}"]`);
+  if(el) el.style.transform=`translate(-50%,-50%) rotate(${v}deg)`;
+  drawLines();
+}
+
+// ── 描画 ────────────────────────────────────
+function p2xy(lat,lng){ const p=map.latLngToContainerPoint([lat,lng]); return{x:p.x,y:p.y}; }
+
+function render(){
+  const ov=document.getElementById('overlay');
+  ov.querySelectorAll('.mitem').forEach(e=>e.remove());
+  drawLines();
+  items.forEach(it=>{
+    const{x,y}=p2xy(it.lat,it.lng);
+    const el=document.createElement('div');
+    el.className='mitem'; el.dataset.id=it.id;
+    el.style.left=x+'px'; el.style.top=y+'px';
+    el.style.transform=`translate(-50%,-50%) rotate(${it.rot}deg)`;
+    el.innerHTML=it.type==='cone'?svgCone(it.id===selId):svgArrow(it.id===selId);
+    el.addEventListener('mousedown',e=>{ if(mode==='sel') startDrag(e,it.id); });
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(mode==='del'){ items=items.filter(i=>i.id!==it.id); if(selId===it.id){selId=null;updateInspector();} render(); updateCnt(); return; }
+      if(mode==='sel'){ selId=it.id; render(); updateInspector(); showCoord(it); }
+    });
+    ov.appendChild(el);
+  });
+}
+
+function showCoord(it){
+  document.getElementById('st-sel').textContent=
+    `選択: ${it.type==='cone'?'コーン':'矢印板'} #${it.id}  (${it.lat.toFixed(6)}, ${it.lng.toFixed(6)})`;
+}
+
+function drawLines(){
+  const svg=document.getElementById('lines'); svg.innerHTML='';
+  const cones=items.filter(i=>i.type==='cone');
+  if(cones.length<2) return;
+  const sorted=[...cones].sort((a,b)=>{
+    const pa=p2xy(a.lat,a.lng),pb=p2xy(b.lat,b.lng);
+    return Math.abs(pa.y-pb.y)<50?pa.x-pb.x:pa.y-pb.y;
+  });
+  for(let i=0;i<sorted.length-1;i++){
+    const a=sorted[i],b=sorted[i+1];
+    const pa=p2xy(a.lat,a.lng),pb=p2xy(b.lat,b.lng);
+    if(Math.hypot(pb.x-pa.x,pb.y-pa.y)<400){
+      const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+      l.setAttribute('x1',pa.x);l.setAttribute('y1',pa.y);
+      l.setAttribute('x2',pb.x);l.setAttribute('y2',pb.y);
+      l.setAttribute('stroke','#E05A00');l.setAttribute('stroke-width','3');
+      l.setAttribute('stroke-dasharray','9,6');l.setAttribute('opacity','0.85');
+      svg.appendChild(l);
+    }
+  }
+}
+
+function svgCone(sel){
+  return `<svg viewBox="0 0 30 33" width="30" height="33" xmlns="http://www.w3.org/2000/svg">
+    ${sel?`<ellipse cx="15" cy="16" rx="17" ry="18" fill="none" stroke="#4a9eff" stroke-width="2.5" stroke-dasharray="4,2"/>`:''}
+    <polygon points="15,1 27,28 3,28" fill="#E05A00" stroke="#B04000" stroke-width=".5"/>
+    <rect x="3" y="17" width="24" height="3.5" fill="white" opacity=".9"/>
+    <rect x="3" y="23" width="24" height="2.5" fill="white" opacity=".9"/>
+    <rect x="1" y="27" width="28" height="3.5" rx="1" fill="#aaa"/>
+  </svg>`;
+}
+function svgArrow(sel){
+  return `<svg viewBox="0 0 38 30" width="38" height="30" xmlns="http://www.w3.org/2000/svg">
+    ${sel?`<rect x="-3" y="-3" width="44" height="36" rx="5" fill="none" stroke="#4a9eff" stroke-width="2.5" stroke-dasharray="4,2"/>`:''}
+    <rect x="1" y="1" width="36" height="23" rx="2" fill="#FFD600" stroke="#B8900A" stroke-width="1"/>
+    <polygon points="7,12 17,5 17,9 28,9 28,15 17,15 17,19" fill="#111"/>
+    <rect x="15" y="23" width="8" height="5" rx="1" fill="#888"/>
+  </svg>`;
+}
+
+// ── ドラッグ移動 ─────────────────────────────
+function startDrag(e,id){
+  e.stopPropagation(); dragging=false;
+  const it=items.find(i=>i.id===id);
+  const sx=e.clientX,sy=e.clientY;
+  const r=document.getElementById('overlay').getBoundingClientRect();
+  const mv=ev=>{
+    if(Math.hypot(ev.clientX-sx,ev.clientY-sy)>4) dragging=true;
+    if(!dragging) return;
+    const ll=map.containerPointToLatLng([ev.clientX-r.left,ev.clientY-r.top]);
+    it.lat=ll.lat; it.lng=ll.lng; render();
+  };
+  const up=()=>{
+    document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up);
+    setTimeout(()=>{ dragging=false; },50);
+    showCoord(it);
+  };
+  document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
+  selId=id; render(); updateInspector();
+}
+
+function clearAll(){
+  if(!items.length) return;
+  if(!confirm('全ての配置をクリアしますか？')) return;
+  items=[]; selId=null; render(); updateCnt(); updateInspector();
+  document.getElementById('st-sel').textContent='';
+}
+function updateCnt(){
+  const c=items.filter(i=>i.type==='cone').length;
+  const a=items.filter(i=>i.type==='arrow').length;
+  document.getElementById('st-cnt').textContent=`コーン: ${c} ／ 矢印板: ${a}`;
+}
+
+// ── CSV出力モーダル ──────────────────────────
+function openCsvModal(){
+  if(!items.length){ alert('配置されているオブジェクトがありません'); return; }
+  document.getElementById('csv-modal').classList.add('show');
+  onCrsChange();
+}
+function closeCsvModal(){ document.getElementById('csv-modal').classList.remove('show'); }
+function onCrsChange(){
+  const isJpc=document.getElementById('csv-crs').value==='jpc';
+  document.getElementById('zone-row').style.display=isJpc?'block':'none';
+}
+
+function doExportCSV(){
+  const crs=document.getElementById('csv-crs').value;
+  const zone=parseInt(document.getElementById('csv-zone').value);
+
+  let header, rows;
+  if(crs==='wgs84'){
+    header='ID,種別,緯度(WGS84),経度(WGS84),角度(度)\n';
+    rows=items.map(it=>
+      `${it.id},${it.type==='cone'?'カラーコーン':'矢印板'},${it.lat.toFixed(8)},${it.lng.toFixed(8)},${it.rot}`
+    ).join('\n');
+  } else {
+    const zoneNames={1:'第1系',2:'第2系',3:'第3系',4:'第4系',5:'第5系',6:'第6系',7:'第7系',8:'第8系',9:'第9系',10:'第10系',11:'第11系',12:'第12系',13:'第13系',14:'第14系',15:'第15系',16:'第16系',17:'第17系',18:'第18系',19:'第19系'};
+    header=`ID,種別,X座標(m)[南北/北が正],Y座標(m)[東西/東が正],角度(度),測地系,系番号\n`;
+    rows=items.map(it=>{
+      const {X,Y}=wgs84ToJpc(it.lat,it.lng,zone);
+      return `${it.id},${it.type==='cone'?'カラーコーン':'矢印板'},${X.toFixed(3)},${Y.toFixed(3)},${it.rot},JGD2011,${zoneNames[zone]}`;
+    }).join('\n');
+  }
+
+  // TextEncoder → base64 → data:URI（encodeURIComponentを避けてエラー回避）
+  const bom='\uFEFF';
+  const csv=bom+header+rows;
+  const bytes=new TextEncoder().encode(csv);
+  let binary='';
+  bytes.forEach(b=>{ binary+=String.fromCharCode(b); });
+  const b64=btoa(binary);
+  const fname=`road_work_${crs==='jpc'?'jpc_zone'+zone+'_':''}${new Date().toISOString().slice(0,10)}.csv`;
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8;base64,'+b64;
+  a.download=fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  closeCsvModal();
+}
+
+// ================================================================
+// 平面直角座標系 → WGS84 逆変換
+// ================================================================
+function jpcToWgs84(X, Y, zone) {
+  if(!JPC_ORIGINS[zone]) zone=9;
+  const [phi0_deg, lam0_deg] = JPC_ORIGINS[zone];
+  const deg2rad = Math.PI / 180;
+  const rad2deg = 180 / Math.PI;
+  const phi0 = phi0_deg * deg2rad;
+  const lam0 = lam0_deg * deg2rad;
+  const a = 6378137.0, F = 298.257222101;
+  const f = 1/F, n = f/(2-f);
+  const n2=n*n, n3=n*n*n, n4=n*n*n*n, n5=n2*n3;
+  function A(j){const c=[1+n2/4+n4/64,-(3/2)*(n-n3/8-n5*15/128),(15/16)*(n2-n4/4),-(35/48)*(n3-5*n5/16),(315/512)*n4,-(693/1280)*n5];return c[j];}
+  const m0=0.9999, a_=m0*a/(1+n)*A(0);
+  function S(phi){return m0*a/(1+n)*(A(0)*phi+A(1)*Math.sin(2*phi)+A(2)*Math.sin(4*phi)+A(3)*Math.sin(6*phi)+A(4)*Math.sin(8*phi)+A(5)*Math.sin(10*phi));}
+  const S0=S(phi0);
+  const betas=[0,(1/2)*n-(2/3)*n2+(37/96)*n3-(1/360)*n4-(81/512)*n5,(1/48)*n2+(1/15)*n3-(437/1440)*n4+(46/105)*n5,(17/480)*n3-(37/840)*n4-(209/4480)*n5,(4397/161280)*n4-(11/504)*n5,(4583/161280)*n5];
+  const deltas=[0,2*n-(2/3)*n2-2*n3+(116/45)*n4+(26/45)*n5-(2854/675)*n2*n3,(7/3)*n2-(8/5)*n3-(227/45)*n4+(2704/315)*n5,(56/15)*n3-(136/35)*n4-(1262/105)*n5,(4279/630)*n4-(332/35)*n5,(4174/315)*n5];
+  const xiP=(X+S0)/a_, etaP=Y/a_;
+  let xi=xiP, eta=etaP;
+  for(let j=1;j<=5;j++){xi-=betas[j]*Math.sin(2*j*xiP)*Math.cosh(2*j*etaP);eta-=betas[j]*Math.cos(2*j*xiP)*Math.sinh(2*j*etaP);}
+  const chi=Math.asin(Math.sin(xi)/Math.cosh(eta));
+  let phi=chi;
+  for(let j=1;j<=5;j++) phi+=deltas[j]*Math.sin(2*j*chi);
+  const lam=lam0+Math.atan2(Math.sinh(eta),Math.cos(xi));
+  return{lat:phi*rad2deg, lng:lam*rad2deg};
+}
+
+// ── CSV読込（ヘッダーで座標系を自動判別）────────
+function importCSV(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result.replace(/^\uFEFF/,'');
+    const lines=text.trim().split('\n');
+    if(lines.length<2){alert('データがありません');return;}
+
+    // ヘッダー行で座標系を判別
+    const header=lines[0].toLowerCase();
+    const isJpc=header.indexOf('x座標')>=0;
+
+    // 全行・全列をスキャンして「第N系」を探す
+    let detectedZone=9;
+    if(isJpc){
+      let found=false;
+      for(let i=1;i<lines.length&&!found;i++){
+        const cols=lines[i].split(',');
+        for(let c=0;c<cols.length&&!found;c++){
+          const s=cols[c].trim();
+          const m=s.match(/第(\d+)系/);
+          if(m){
+            const z=parseInt(m[1]);
+            if(z>=1&&z<=19){detectedZone=z;found=true;}
+          }
+        }
+      }
+      if(!JPC_ORIGINS[detectedZone]) detectedZone=9;
+    }
+
+    let imported=0, errors=0;
+    const lastLL={lat:35.6812,lng:139.7671};
+    lines.forEach(function(line,idx){
+      if(idx===0) return;
+      const cols=line.split(',').map(function(s){return s.trim();});
+      if(cols.length<4) return;
+      const typeRaw=cols[1];
+      const v1=parseFloat(cols[2]), v2=parseFloat(cols[3]);
+      const rot=cols[4]!==undefined?(norm(parseInt(cols[4])||0)):0;
+      if(isNaN(v1)||isNaN(v2)){errors++;return;}
+      let lat,lng;
+      if(isJpc){
+        const ll=jpcToWgs84(v1,v2,detectedZone);
+        lat=ll.lat; lng=ll.lng;
+      } else {
+        lat=v1; lng=v2;
+      }
+      if(isNaN(lat)||isNaN(lng)||lat<20||lat>46||lng<122||lng>154){errors++;return;}
+      const type=(typeRaw==='カラーコーン'||typeRaw==='cone')?'cone':'arrow';
+      items.push({id:nid++,type:type,lat:lat,lng:lng,rot:rot});
+      lastLL.lat=lat; lastLL.lng=lng;
+      imported++;
+    });
+
+    render(); updateCnt();
+    if(imported>0) map.setView([lastLL.lat,lastLL.lng],17);
+    const modeStr=isJpc?('平面直角座標系 第'+detectedZone+'系'):'経WGS84';
+    alert(imported+'件を読み込みました（'+modeStr+'）'+(errors>0?' / '+errors+'件スキップ':''));
+  };
+  reader.readAsText(file,'UTF-8');
+  input.value='';
+}
+
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
