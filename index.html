@@ -218,7 +218,7 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
   <span id="st-mode" class="st-hi">モード: 選択</span>
   <span id="st-cnt">コーン: 0 ／ 矢印板: 0</span>
   <span id="st-sel"></span>
-  <span style="margin-left:auto;font-size:10px;opacity:.35">© 国土地理院 ／ JGD2011 ／ v2026-06-05 08:42629</span>
+  <span style="margin-left:auto;font-size:10px;opacity:.35">© 国土地理院 ／ JGD2011 ／ v2026-06-05 08:482629</span>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -327,9 +327,9 @@ let map, mode='sel', items=[], selId=null, nid=1, dragging=false;
 let tileRoad, tileSat;
 
 function init(){
-  map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:18}).setView([36.5,136.0],5);
-  tileRoad = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'}).addTo(map);
-  tileSat  = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'});
+  map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:22}).setView([36.5,136.0],5);
+  tileRoad = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{minZoom:2,maxZoom:22,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'}).addTo(map);
+  tileSat  = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{minZoom:2,maxZoom:22,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'});
   map.on('moveend zoomend', render);
   setMode('sel');
 }
