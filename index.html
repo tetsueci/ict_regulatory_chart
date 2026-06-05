@@ -97,8 +97,8 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
   </div>
   <div class="sep"></div>
   <div class="tool-group">
-    <button class="tbtn active" id="mt-road" onclick="setTile('road')">標準</button>
-    <button class="tbtn" id="mt-sat" onclick="setTile('sat')">衛星</button>
+    <button class="tbtn active" id="mt-road" onclick="setTile('road')">地図</button>
+    <button class="tbtn" id="mt-sat" onclick="setTile('sat')">写真</button>
     <button class="tbtn" id="jump-toggle" onclick="toggleJump()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 14 8 14s8-8.6 8-14a8 8 0 0 0-8-8z"/></svg>場所を移動
     </button>
@@ -218,7 +218,7 @@ body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; backgroun
   <span id="st-mode" class="st-hi">モード: 選択</span>
   <span id="st-cnt">コーン: 0 ／ 矢印板: 0</span>
   <span id="st-sel"></span>
-  <span style="margin-left:auto;font-size:10px;opacity:.35">© OpenStreetMap contributors ／ JGD2011 ／ v2026-06-04 12:529</span>
+  <span style="margin-left:auto;font-size:10px;opacity:.35">© 国土地理院 ／ JGD2011 ／ v2026-06-05 08:42629</span>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -327,14 +327,9 @@ let map, mode='sel', items=[], selId=null, nid=1, dragging=false;
 let tileRoad, tileSat;
 
 function init(){
-  map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:23}).setView([36.5,136.0],5);
-  tileRoad = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-  tileRoad.options.maxNativeZoom = 19;
-  tileRoad.options.maxZoom = 23;
-  tileRoad.addTo(map);
-  tileSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-  tileSat.options.maxNativeZoom = 23;
-  tileSat.options.maxZoom = 23;
+  map = L.map('map',{zoomControl:true,attributionControl:false,maxZoom:18}).setView([36.5,136.0],5);
+  tileRoad = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'}).addTo(map);
+  tileSat  = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',{maxZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'});
   map.on('moveend zoomend', render);
   setMode('sel');
 }
@@ -343,8 +338,13 @@ function init(){
 function setTile(t){
   document.getElementById('mt-road').classList.toggle('active',t==='road');
   document.getElementById('mt-sat').classList.toggle('active',t==='sat');
-  if(t==='road'){ map.removeLayer(tileSat); if(!map.hasLayer(tileRoad)) map.addLayer(tileRoad); }
-  else           { map.removeLayer(tileRoad); if(!map.hasLayer(tileSat))  map.addLayer(tileSat); }
+  if(t==='road'){
+    map.removeLayer(tileSat);
+    if(!map.hasLayer(tileRoad)) map.addLayer(tileRoad);
+  } else {
+    map.removeLayer(tileRoad);
+    if(!map.hasLayer(tileSat)) map.addLayer(tileSat);
+  }
 }
 
 // ── ジャンプパネル ──────────────────────────
