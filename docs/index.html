@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IFC ビューア</title>
+    <script type="module" crossorigin src="./assets/index-D2kw0hCs.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C1dDS5Eo.css">
+  </head>
+  <body>
+    <div id="viewer-container"></div>
+
+    <header id="toolbar">
+      <span id="title">IFC ビューア</span>
+      <button id="btn-fit" type="button" title="全体を表示">全体</button>
+      <button id="btn-clip" type="button" title="面をダブルクリックで断面を作る / Delete で消す">断面</button>
+      <button id="btn-props" type="button" title="プロパティ欄の表示切り替え">属性</button>
+    </header>
+
+    <aside id="props" hidden>
+      <div class="props-head">
+        <span>プロパティ</span>
+        <button id="props-close" type="button" aria-label="閉じる">×</button>
+      </div>
+      <div id="props-body"><p class="muted">部材をクリックすると表示します。</p></div>
+    </aside>
+
+    <div id="status" role="status">読み込み中…</div>
+
+  </body>
+</html>
