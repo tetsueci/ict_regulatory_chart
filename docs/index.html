@@ -4,14 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>IFC ビューア</title>
-    <script type="module" crossorigin src="./assets/index-DlWLRvCJ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Dd3qsQOI.css">
+    <script type="module" crossorigin src="./assets/index-Dvm4ygs7.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DM99JKxh.css">
   </head>
   <body>
     <div id="viewer-container"></div>
 
     <header id="toolbar">
       <span id="title">IFC ビューア</span>
+      <button id="btn-open" type="button" title="手元の IFC を開く（ドラッグ＆ドロップでも開けます）">開く</button>
       <button id="btn-fit" type="button" title="全体を表示">全体</button>
       <button id="btn-clip" type="button" title="面をダブルクリックで断面を作る / Delete で消す">断面</button>
       <button id="btn-props" type="button" title="プロパティ欄の表示切り替え">属性</button>
@@ -25,6 +26,13 @@
       </div>
       <div id="props-body"><p class="muted">部材をクリックすると表示します。</p></div>
     </aside>
+
+    <div id="drop-hint" hidden>
+      <p>IFC ファイルをここへドラッグ＆ドロップ</p>
+      <p class="muted">または左上の「開く」から選んでください</p>
+    </div>
+
+    <input id="file-input" type="file" accept=".ifc" hidden />
 
     <div id="status" role="status">読み込み中…</div>
 
