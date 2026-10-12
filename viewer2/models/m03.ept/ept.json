@@ -1,0 +1,75 @@
+{
+ "bounds": [
+  -59046.705395599995,
+  -100424.88539553505,
+  -155.78639554234462,
+  -58678.766604529905,
+  -100056.94660446496,
+  212.1523955277466
+ ],
+ "boundsConformed": [
+  -59046.687,
+  -100409.748,
+  23.793999990683517,
+  -58678.785000129894,
+  -100072.084,
+  32.571999994718475
+ ],
+ "dataType": "laszip",
+ "hierarchyType": "json",
+ "points": 51097655,
+ "schema": [
+  {
+   "name": "X",
+   "type": "signed",
+   "size": 4,
+   "scale": 0.001,
+   "offset": -58862.736
+  },
+  {
+   "name": "Y",
+   "type": "signed",
+   "size": 4,
+   "scale": 0.001,
+   "offset": -100240.916
+  },
+  {
+   "name": "Z",
+   "type": "signed",
+   "size": 4,
+   "scale": 0.001,
+   "offset": 28.183
+  },
+  {
+   "name": "Intensity",
+   "type": "unsigned",
+   "size": 2
+  },
+  {
+   "name": "Classification",
+   "type": "unsigned",
+   "size": 1
+  },
+  {
+   "name": "Red",
+   "type": "unsigned",
+   "size": 2
+  },
+  {
+   "name": "Green",
+   "type": "unsigned",
+   "size": 2
+  },
+  {
+   "name": "Blue",
+   "type": "unsigned",
+   "size": 2
+  }
+ ],
+ "span": 128,
+ "srs": {},
+ "version": "1.0.0",
+ "buildId": "20261012101349",
+ "source": "noporo-fil.las",
+ "sourcePoints": 51097655
+}

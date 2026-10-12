@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>IFC ビューア 2</title>
-    <script type="module" crossorigin src="./assets/index-De1V9MI-.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B34kf4wb.css">
+    <title>IFC ビューア 2</title>
+    <script type="module" crossorigin src="./assets/index-BEgasWj2.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CIT0YCW3.css">
   </head>
   <body>
     <div id="viewer"></div>
@@ -16,6 +16,8 @@
       <button id="btn-fit" type="button" title="全体を表示">全体</button>
       <button id="btn-clip" type="button" title="高さで切って中を見る">断面</button>
       <button id="btn-props" type="button" title="属性欄の表示切り替え">属性</button>
+      <button id="btn-pc" type="button" title="点群の表示切り替え" hidden>点群</button>
+      <button id="btn-edit" type="button" title="鉄筋の長さを変える（3dhaikinx の定義があるときだけ）" hidden>編集</button>
       <span id="build" title="このビューアをビルドした日時と形状の作り方"></span>
     </header>
 
@@ -23,6 +25,12 @@
       <label for="clip-range">断面の高さ</label>
       <input id="clip-range" type="range" min="0" max="1000" value="1000" />
       <button id="clip-flip" type="button" title="残す側を反対にする">上下反転</button>
+    </div>
+
+    <div id="pc-panel" hidden>
+      <label for="pc-size">点の大きさ</label>
+      <input id="pc-size" type="range" min="1" max="6" step="0.5" value="2" />
+      <span id="pc-info" class="muted"></span>
     </div>
 
     <aside id="props" hidden>
@@ -33,12 +41,44 @@
       <div id="props-body"><p class="muted">部材をクリックすると表示します。</p></div>
     </aside>
 
+    <aside id="edit-panel" hidden>
+      <div class="props-head">
+        <span>鉄筋の長さを変える</span>
+        <button id="edit-close" type="button" aria-label="閉じる">×</button>
+      </div>
+      <div class="edit-body">
+        <p id="edit-summary" class="muted"></p>
+        <p class="muted">見えるのは試算です。確定は変更票を CAD（3dhaikinx）で読んで作り直したあと。</p>
+        <div id="edit-groups"></div>
+        <div id="edit-group"><p class="muted">一覧か、鉄筋をクリックしてグループを選んでください。</p></div>
+        <div class="edit-actions">
+          <button id="btn-changes" type="button" disabled title="3dhaikinx の hkxchg_apply で読む変更票（JSON）">変更票を書き出す</button>
+          <button id="btn-result" type="button" title="3dhaikinx が書いた結果（.result.json）を読み、ビューアの計算と突き合わせる">結果を読む</button>
+          <button id="btn-reset-all" type="button">全部元に戻す</button>
+          <span id="edit-count" class="muted"></span>
+          <input id="result-file" type="file" accept=".json,application/json" hidden />
+        </div>
+        <div id="edit-result"></div>
+        <h3>鉄筋表</h3>
+        <div id="edit-table"></div>
+      </div>
+    </aside>
+
+    <div id="pwcard" hidden>
+      <form id="pwform">
+        <p>このモデルはパスワードで保護されています。</p>
+        <input id="pw" type="password" autocomplete="current-password" aria-label="パスワード" />
+        <button id="pwok" type="submit">開く</button>
+        <p id="pwmsg" class="muted"></p>
+      </form>
+    </div>
+
     <div id="drop-hint" hidden>
       <p>IFC ファイルをここへドラッグ＆ドロップ</p>
       <p class="muted">または左上の「開く」から選んでください</p>
     </div>
 
     <div id="status" role="status">読み込み中…</div>
-
+
   </body>
 </html>
